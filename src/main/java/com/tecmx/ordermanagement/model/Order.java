@@ -81,13 +81,9 @@ public class Order {
         this.items.add(item);
     }
 
-    /**
-     * TODO: Implement this method to calculate the order total. - Sum the
-     * subtotals of all OrderItems. - Throw BusinessRuleException if the order
-     * has no items. - Log the calculated total at INFO level.
-     */
+    /** Validates and calculates order total. */
     public double getTotal() {
-        validateOrderItemCount(this.items.size());
+        validateOrderItemCount();
 
         double total = this.items
                 .stream()
@@ -100,13 +96,12 @@ public class Order {
 
     /** Validates that order count
      * is greater than zero.
-     * @param count int
-     * @throws BusinessRuleException if count <= 0
+     * @throws BusinessRuleException if items is empty.
     */
-    private static void validateOrderItemCount(int count) throws BusinessRuleException {
-        if (count <= 0) {
-            logger.error("Invalid order item count: {}", count);
-            throw new BusinessRuleException("Invalid order item count: " + count);
+    private void validateOrderItemCount() throws BusinessRuleException {
+        if (this.items.isEmpty()) {
+            logger.error("Order items is empty.");
+            throw new BusinessRuleException("Invalid order item count: " + this.items.size());
         }
     }
 
