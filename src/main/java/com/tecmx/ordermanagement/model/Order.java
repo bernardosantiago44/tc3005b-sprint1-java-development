@@ -1,5 +1,9 @@
 package com.tecmx.ordermanagement.model;
 
+import com.tecmx.ordermanagement.exception.BusinessRuleException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -12,6 +16,8 @@ public class Order {
     public enum Status {
         CREATED, CONFIRMED, SHIPPED, DELIVERED, CANCELLED
     }
+
+    private static final Logger logger = LoggerFactory.getLogger(Order.class);
 
     private String id;
     private String customerId;
@@ -81,8 +87,27 @@ public class Order {
      * has no items. - Log the calculated total at INFO level.
      */
     public double getTotal() {
-        // TODO: Implement
-        return 0.0;
+        validateOrderItemCount(this.items.size());
+
+        double total = this.items
+                .stream()
+                .map((OrderItem::getSubtotal))
+                .reduce(0.0, Double::sum);
+        logger.info("Order id: {}, Order Total: {}", this.id, total);
+
+        return total;
+    }
+
+    /** Validates that order count
+     * is greater than zero.
+     * @param count int
+     * @throws BusinessRuleException if count <= 0
+    */
+    private static void validateOrderItemCount(int count) throws BusinessRuleException {
+        if (count <= 0) {
+            logger.error("Invalid order item count: {}", count);
+            throw new BusinessRuleException("Invalid order item count: " + count);
+        }
     }
 
     @Override
