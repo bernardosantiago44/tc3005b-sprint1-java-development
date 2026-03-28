@@ -1,9 +1,15 @@
 package com.tecmx.ordermanagement.model;
 
+import com.tecmx.ordermanagement.exception.ValidationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Represents a line item within an order.
  */
 public class OrderItem {
+
+    private static final Logger logger = LoggerFactory.getLogger(OrderItem.class);
 
     private Product product;
     private int quantity;
@@ -38,8 +44,19 @@ public class OrderItem {
      * calculation at DEBUG level.
      */
     public double getSubtotal() {
-        // TODO: Implement
-        return 0.0;
+        validateQuantity(this.quantity);
+
+        double subtotal = this.product.getPrice() * (double)this.quantity;
+        logger.debug("Price x Quantity: {} x {} = {}", this.product.getPrice(), this.quantity, subtotal);
+
+        return subtotal;
+    }
+
+    private static void validateQuantity(int quantity) throws ValidationException {
+        if (quantity <= 0) {
+            logger.error("Invalid Quantity {}", quantity);
+            throw new ValidationException("Quantity must be greater than zero.", "Product.Quantity");
+        }
     }
 
     @Override
