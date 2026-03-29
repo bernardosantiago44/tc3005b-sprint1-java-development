@@ -81,18 +81,25 @@ public class OrderService {
     }
 
     /**
-     * Confirms an order (changes its status to CONFIRMED).
-     *
-     * TODO: 1. Find the order → if not found, throw ResourceNotFoundException.
-     * 2. Validate that the order is in CREATED status → throw
-     * BusinessRuleException if not. 3. Validate that the order has at least one
-     * item → throw BusinessRuleException if not. 4. Change the status to
-     * CONFIRMED and save. 5. Log at INFO level: "Order {orderId} confirmed with
-     * {itemCount} items, total: {total}".
+     * Confirms an order and changes its status to CONFIRMED.
      */
     public Order confirmOrder(String orderId) {
-        // TODO: Implement
-        return null;
+        ensureOrderIdExists(orderId);
+
+        Order order = orderRepository
+                .findOrderById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("", "orderId")); // Should never throw
+
+
+        validateOrderStatus(order.getStatus(), Order.Status.CREATED);
+        validateOrderItemCount(order.getItems().size());
+
+        order.setStatus(Order.Status.CONFIRMED);
+        orderRepository.saveOrder(order);
+
+        logger.info("Order {} confirmed with {} items, total: {}", orderId, order.getItems().size(), order.getTotal());
+
+        return order;
     }
 
     /**
@@ -146,6 +153,18 @@ public class OrderService {
         }
     }
 
+    /** Ensures the orderId exists in the repository.
+     *
+     * @param orderId orderId to check for
+     * @throws ResourceNotFoundException if orderId does not exist in the repository.
+     */
+    private void ensureOrderIdExists(String orderId) throws ResourceNotFoundException {
+        if (!orderRepository.existsOrderById(orderId)) {
+            logger.error("Order {} not found.", orderId);
+            throw new ResourceNotFoundException("Order with id " + orderId + " does not exist.", "orderId");
+        }
+    }
+
     /** Validates an optional-value object.
      *
      * @param optional Optional object to be validated.
@@ -182,6 +201,30 @@ public class OrderService {
         if (inventoryStock < neededStock) {
             logger.error("Insufficient stock: {} out of the {} needed", inventoryStock, neededStock);
             throw new BusinessRuleException("Insufficient stock");
+        }
+    }
+
+    /** Checks the actual status of an order with the expected status.
+     * @param actual The current status of the order.
+     * @param expected The expected status of the order.
+     * @throws BusinessRuleException If both values are different.
+     */
+    private static void validateOrderStatus(Order.Status actual, Order.Status expected) throws BusinessRuleException {
+        if (!actual.equals(expected)) {
+            logger.error("Order status {} does not equal {}", actual, expected);
+            throw new BusinessRuleException("Order status should be " + expected.toString());
+        }
+    }
+
+    /** Validates the size to be a positive integer greater than zero.
+     *
+     * @param size Count of the order items.
+     * @throws BusinessRuleException if size <= 0
+     */
+    private static void validateOrderItemCount(int size) throws BusinessRuleException {
+        if (size <= 0) {
+            logger.error("Order items can not be empty (provided {})", size);
+            throw new BusinessRuleException("Order items can not be empty.");
         }
     }
 }
