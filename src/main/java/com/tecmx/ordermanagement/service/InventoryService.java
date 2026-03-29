@@ -1,5 +1,7 @@
 package com.tecmx.ordermanagement.service;
 
+import com.tecmx.ordermanagement.exception.ResourceNotFoundException;
+import com.tecmx.ordermanagement.exception.ValidationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -8,8 +10,6 @@ import com.tecmx.ordermanagement.repository.OrderRepository;
 
 /**
  * Inventory/product management service.
- *
- * Students must complete the implementation.
  */
 public class InventoryService {
 
@@ -23,43 +23,88 @@ public class InventoryService {
 
     /**
      * Registers a new product in the inventory.
-     *
-     * TODO: 1. Validate that id is not null or empty → ValidationException. 2.
-     * Validate that name is not null or empty → ValidationException. 3.
-     * Validate that price > 0 → ValidationException. 4. Validate that
-     * stockQuantity >= 0 → ValidationException. 5. Create the product, save it
-     * in the repository. 6. Log at INFO level: "Product registered: {id} -
-     * {name} (stock: {qty}, price: {price})". 7. Return the created product.
      */
     public Product registerProduct(String id, String name, double price, int stockQuantity) {
-        // TODO: Implement
-        return null;
+        validateStringNotEmpty(id, "productId");
+        validateStringNotEmpty(name, "productName");
+        validateIsPositive(price, "price");
+        validateIsPositiveOrZero(stockQuantity, "stockQuantity");
+
+        Product product = new Product(id, name, price, stockQuantity);
+        orderRepository.saveProduct(product);
+
+        logger.info("Product registered: {}, {}, (stock: {}, price: {})", id, name, stockQuantity, price);
+
+        return product;
     }
 
     /**
      * Updates the stock of an existing product.
-     *
-     * TODO: 1. Find the product → if not found, throw
-     * ResourceNotFoundException. 2. Validate that additionalStock > 0 →
-     * ValidationException. 3. Add additionalStock to the current stock. 4. Save
-     * the updated product. 5. Log at INFO level: "Stock updated for
-     * {productId}: +{additionalStock} → new stock: {newTotal}". 6. Return the
-     * updated product.
      */
     public Product restockProduct(String productId, int additionalStock) {
-        // TODO: Implement
-        return null;
+        Product product = orderRepository
+                .findProductById(productId)
+                .orElseThrow(() -> new ResourceNotFoundException("Product " + productId + " not found", "productId"));
+
+        validateIsPositive(additionalStock, "additionalStock");
+
+        int newTotal = product.getStockQuantity() + additionalStock;
+        product.setStockQuantity(newTotal);
+
+        logger.info("Stock updated for {}: +{} → new stock: {}", productId, additionalStock, newTotal);
+
+        return product;
     }
 
     /**
      * Checks the current stock of a product.
-     *
-     * TODO: 1. Find the product → if not found, throw
-     * ResourceNotFoundException. 2. Log at DEBUG level: "Stock check for
-     * {productId}: {currentStock}". 3. Return the stock quantity.
      */
     public int checkStock(String productId) {
-        // TODO: Implement
-        return 0;
+        Product product = orderRepository
+                .findProductById(productId)
+                .orElseThrow(() -> new ResourceNotFoundException("Product " + productId + " not found", "productId"));
+
+        logger.debug("Stock checked for {}: {}", product, product.getStockQuantity());
+
+        return product.getStockQuantity();
+    }
+
+    /** Validates the given string not to be null or empty.
+     *
+     * @param string    to be validated
+     * @param fieldName name of the field being validated
+     * @throws ValidationException if the string is null or empty.
+     */
+    private static void validateStringNotEmpty(String string, String fieldName) throws ValidationException {
+        if (string == null || string.trim().isEmpty()) {
+            logger.error("Found empty {} string", fieldName);
+            throw new ValidationException("Found null or empty string", fieldName);
+        }
+    }
+
+    /** Validates the given number to be greater than zero.
+     *
+     * @param number number to be validated (can be int or double)
+     * @param fieldName name of the value being validated
+     * @throws ValidationException if number <= 0
+     */
+    private static void validateIsPositive(Number number, String fieldName) throws ValidationException {
+        if (number.doubleValue() <= 0) {
+            logger.error("{} should be greater than zero: {}", fieldName, number.doubleValue());
+            throw new ValidationException("Value should be greater than zero", fieldName);
+        }
+    }
+
+    /** Validates the given number to be zero or greater.
+     *
+     * @param number number to be validated (can be int or double)
+     * @param fieldName name of the value being validated
+     * @throws ValidationException if number < 0
+     */
+    private static void validateIsPositiveOrZero(Number number, String fieldName) throws ValidationException {
+        if (number.doubleValue() < 0) {
+            logger.error("{} should be zero or more: {}", fieldName, number.doubleValue());
+            throw new ValidationException("Value should be greater than or zero", fieldName);
+        }
     }
 }
