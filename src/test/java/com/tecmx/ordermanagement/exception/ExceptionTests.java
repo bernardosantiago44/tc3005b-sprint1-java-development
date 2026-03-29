@@ -33,39 +33,42 @@ class ExceptionTests {
     @Test
     @DisplayName("ResourceNotFoundException should be an instance of OrderManagementException")
     void resourceNotFoundShouldExtendBase() {
-        // TODO: After fixing the inheritance, this test should pass.
-        //       Create a ResourceNotFoundException and verify with instanceof
-        //       that it is an OrderManagementException.
+        ResourceNotFoundException exception = new ResourceNotFoundException("not found", "test");
+        assertInstanceOf(OrderManagementException.class, exception);
     }
 
     @Test
     @DisplayName("ResourceNotFoundException should have errorCode RESOURCE_NOT_FOUND")
     void resourceNotFoundShouldHaveCorrectErrorCode() {
-        // TODO: Implement - Verify the errorCode.
+        ResourceNotFoundException exception = new ResourceNotFoundException("Not found", "test");
+        assertEquals("RESOURCE_NOT_FOUND", exception.getErrorCode());
     }
 
     @Test
     @DisplayName("ValidationException should be an instance of OrderManagementException")
     void validationExceptionShouldExtendBase() {
-        // TODO: Implement
+        ValidationException exception = new ValidationException("invalid amount", "test");
+        assertInstanceOf(OrderManagementException.class, exception);
     }
 
     @Test
     @DisplayName("ValidationException should store the fieldName")
     void validationExceptionShouldStoreFieldName() {
-        // TODO: Implement - Create with the constructor that takes fieldName,
-        //       verify with getFieldName().
+        ValidationException exception = new ValidationException("invalid amount", "amount");
+        assertEquals("amount", exception.getFieldName());
     }
 
     @Test
     @DisplayName("BusinessRuleException should be an instance of OrderManagementException")
     void businessRuleShouldExtendBase() {
-        // TODO: Implement
+        BusinessRuleException exception = new BusinessRuleException("invalid value");
+        assertInstanceOf(OrderManagementException.class, exception);
     }
 
     @Test
     @DisplayName("BusinessRuleException should support constructor with cause")
     void businessRuleShouldSupportCause() {
-        // TODO: Implement
+        BusinessRuleException exception = new BusinessRuleException("invalid value", new Exception("source exception"));
+        assertInstanceOf(Exception.class, exception.getCause());
     }
 }
