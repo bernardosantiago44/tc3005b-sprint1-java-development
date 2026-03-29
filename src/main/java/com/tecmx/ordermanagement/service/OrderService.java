@@ -6,6 +6,7 @@ import com.tecmx.ordermanagement.exception.ResourceNotFoundException;
 import com.tecmx.ordermanagement.exception.ValidationException;
 import com.tecmx.ordermanagement.model.OrderItem;
 import com.tecmx.ordermanagement.model.Product;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,10 +17,6 @@ import java.util.Optional;
 
 /**
  * Main order management service.
- * Students must complete the implementation following the instructions in each
- * TODO. Each method must: 1. Validate inputs and throw the appropriate
- * exception. 2. Log important operations at the correct level. 3. Be testable
- * with Mockito.
  */
 public class OrderService {
 
@@ -103,29 +100,48 @@ public class OrderService {
     }
 
     /**
-     * Cancels an order (changes its status to CANCELLED).
-     *
-     * TODO: 1. Find the order → if not found, throw ResourceNotFoundException.
-     * 2. Validate that the order is NOT in DELIVERED or CANCELLED status →
-     * throw BusinessRuleException if it is already in one of those states. 3.
-     * BONUS: Restore the stock of each product in the order items. 4. Change
-     * status to CANCELLED and save. 5. Log at WARN level: "Order {orderId} has
-     * been cancelled".
+     * Cancels an order and changes its status to CANCELLED.
      */
     public Order cancelOrder(String orderId) {
-        // TODO: Implement
-        return null;
+        ensureOrderIdExists(orderId);
+
+        Order order = orderRepository
+                .findOrderById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("", "orderId")); // Should never throw
+
+        validateOrderNotDeliveredOrCancelled(order.getStatus());
+        restoreStockForCanceledOrder(order);
+        order.setStatus(Order.Status.CANCELLED);
+
+        logger.warn("Order {} has been cancelled", orderId);
+
+        return order;
+    }
+
+    /** Restores the stock quantity for each of the items
+     * in the canceled order.
+     *
+     * @param order Order to be canceled
+     */
+    private void restoreStockForCanceledOrder(@NotNull Order order) {
+        for (OrderItem orderItem : order.getItems()) {
+            int newQuantity = orderItem.getProduct().getStockQuantity() + orderItem.getQuantity();
+            orderItem.getProduct().setStockQuantity(newQuantity);
+            this.orderRepository.saveProduct(orderItem.getProduct());
+        }
     }
 
     /**
      * Retrieves an order by its ID.
-     *
-     * TODO: 1. Find the order → if not found, throw ResourceNotFoundException.
-     * 2. Log at DEBUG level: "Retrieved order: {orderId}". 3. Return the order.
      */
-    public Order getOrder(String orderId) {
-        // TODO: Implement
-        return null;
+    public Order getOrder(String orderId) throws ResourceNotFoundException{
+        ensureOrderIdExists(orderId);
+
+        logger.debug("Retrieved order: {}", orderId);
+
+        return orderRepository
+                .findOrderById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("", "orderId"));
     }
 
     /** Checks for null or empty strings for the provided value.
@@ -225,6 +241,18 @@ public class OrderService {
         if (size <= 0) {
             logger.error("Order items can not be empty (provided {})", size);
             throw new BusinessRuleException("Order items can not be empty.");
+        }
+    }
+
+    /**
+     * Checks the order status not to be delivered or canceled
+     * @param status to be checked
+     * @throws BusinessRuleException if the status is delivered or canceled.
+     */
+    private static void validateOrderNotDeliveredOrCancelled(Order.Status status) throws BusinessRuleException {
+        if (status.equals(Order.Status.DELIVERED) || status.equals(Order.Status.CANCELLED)) {
+            logger.error("Can not cancel order with previous status of {}", status);
+            throw new BusinessRuleException("Can not cancel order with status " + status);
         }
     }
 }
