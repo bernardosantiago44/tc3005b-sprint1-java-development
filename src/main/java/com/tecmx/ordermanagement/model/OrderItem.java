@@ -38,11 +38,6 @@ public class OrderItem {
         this.quantity = quantity;
     }
 
-    /**
-     * TODO: Implement this method to calculate the subtotal (price * quantity).
-     * Should throw ValidationException if quantity <= 0. Should log the
-     * calculation at DEBUG level.
-     */
     public double getSubtotal() {
         validateQuantity(this.quantity);
 
