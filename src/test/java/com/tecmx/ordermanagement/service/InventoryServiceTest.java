@@ -1,5 +1,7 @@
 package com.tecmx.ordermanagement.service;
 
+import com.tecmx.ordermanagement.exception.ResourceNotFoundException;
+import com.tecmx.ordermanagement.exception.ValidationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -11,6 +13,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.tecmx.ordermanagement.model.Product;
 import com.tecmx.ordermanagement.repository.OrderRepository;
+
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 /**
  * Tests for InventoryService.
@@ -46,39 +53,61 @@ class InventoryServiceTest {
         @DisplayName("Should register a product successfully")
         void shouldRegisterProductSuccessfully() {
             // TODO: Arrange - Mock saveProduct to return the received argument.
+            when(orderRepository.saveProduct(any(Product.class))).thenAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
             // TODO: Act - registerProduct("PROD-002", "Mouse", 29.99, 100).
+            Product product = inventoryService.registerProduct("PROD-002", "Mouse", 29.99, 100);
             // TODO: Assert - The returned product has the correct data.
             //       Verify that saveProduct was invoked 1 time.
+            assertEquals("PROD-002", product.getId());
+            assertEquals("Mouse", product.getName());
+            assertEquals(29.99, product.getPrice());
+            assertEquals(100, product.getStockQuantity());
+            verify(orderRepository, times(1)).saveProduct(any());
         }
 
         @Test
         @DisplayName("Should throw ValidationException if id is null")
         void shouldThrowValidationExceptionWhenIdIsNull() {
-            // TODO: Implement
+            var error = assertThrows(ValidationException.class, () -> inventoryService.registerProduct(null, "Mouse", 29.99, 100));
+            assertEquals("productId", error.getFieldName());
         }
 
         @Test
         @DisplayName("Should throw ValidationException if id is empty")
         void shouldThrowValidationExceptionWhenIdIsEmpty() {
-            // TODO: Implement
+            var error = assertThrows(ValidationException.class, () -> inventoryService.registerProduct("", "Mouse", 29.99, 100));
+            assertEquals("productId", error.getFieldName());
         }
 
         @Test
         @DisplayName("Should throw ValidationException if name is null")
         void shouldThrowValidationExceptionWhenNameIsNull() {
-            // TODO: Implement
+            var error = assertThrows(ValidationException.class, () -> inventoryService.registerProduct("PROD-002", null, 29.99, 100));
+            assertEquals("productName", error.getFieldName());
+        }
+        
+        @Test
+        @DisplayName("Should throw ValidationException if name is empty")
+        void shouldThrowValidationExceptionWhenNameIsEmpty() {
+            var error = assertThrows(ValidationException.class, () -> inventoryService.registerProduct("PROD-002", "", 29.99, 100));
+            assertEquals("productName", error.getFieldName());
         }
 
         @Test
         @DisplayName("Should throw ValidationException if price is <= 0")
         void shouldThrowValidationExceptionWhenPriceIsInvalid() {
-            // TODO: Implement for price = 0 and price = -5.
+            var zero = assertThrows(ValidationException.class, () -> inventoryService.registerProduct("PROD-002", "Mouse", 0, 100));
+            var negative = assertThrows(ValidationException.class, () -> inventoryService.registerProduct("PROD-002", "Mouse", -5, 100));
+            assertEquals("price", zero.getFieldName());
+            assertEquals("price", negative.getFieldName());
+            assertEquals("VALIDATION_ERROR", zero.getErrorCode());
         }
 
         @Test
         @DisplayName("Should throw ValidationException if stockQuantity < 0")
         void shouldThrowValidationExceptionWhenStockIsNegative() {
-            // TODO: Implement
+            var negative = assertThrows(ValidationException.class, () -> inventoryService.registerProduct("PROD-002", "Mouse", 29.99, -5));
+            assertEquals("stockQuantity", negative.getFieldName());
         }
     }
 
@@ -92,22 +121,37 @@ class InventoryServiceTest {
         @Test
         @DisplayName("Should update the stock successfully")
         void shouldRestockSuccessfully() {
-            // TODO: Arrange - Mock findProductById → sampleProduct (stock: 10).
-            //       Mock saveProduct → returns the argument.
-            // TODO: Act - restockProduct("PROD-001", 5).
-            // TODO: Assert - The stock is 15.
+            when(orderRepository.findProductById(any())).thenReturn(Optional.of(sampleProduct));
+            when(orderRepository.saveProduct(any(Product.class))).thenAnswer(invocationOnMock -> invocationOnMock.getArgument(0)); // When not implemented, this fails
+            
+            Product product = inventoryService.restockProduct("PROD-001", 5);
+            
+            assertEquals(15, product.getStockQuantity());
+            verify(orderRepository, times(1)).saveProduct(sampleProduct);
         }
 
         @Test
         @DisplayName("Should throw ResourceNotFoundException if the product does not exist")
         void shouldThrowResourceNotFoundWhenProductDoesNotExist() {
-            // TODO: Implement
+            when(orderRepository.findProductById(any())).thenReturn(Optional.empty());
+            
+            var error = assertThrows(ResourceNotFoundException.class, () -> inventoryService.restockProduct("PROD-001", 5));
+            assertEquals("productId", error.getResourceId());
         }
 
         @Test
         @DisplayName("Should throw ValidationException if additionalStock <= 0")
         void shouldThrowValidationExceptionWhenAdditionalStockIsInvalid() {
             // TODO: Implement
+            when(orderRepository.findProductById(any())).thenReturn(Optional.of(sampleProduct));
+            
+            var zero = assertThrows(ValidationException.class, () ->  inventoryService.restockProduct("PROD-001", 0));
+            var negative = assertThrows(ValidationException.class, () ->  inventoryService.restockProduct("PROD-001", -1));
+            
+            verify(orderRepository, never()).saveProduct(sampleProduct);
+            assertEquals("VALIDATION_ERROR", zero.getErrorCode());
+            assertEquals("additionalStock", zero.getFieldName());
+            assertEquals("additionalStock", negative.getFieldName());
         }
     }
 
@@ -121,13 +165,17 @@ class InventoryServiceTest {
         @Test
         @DisplayName("Should return the stock when the product exists")
         void shouldReturnStockWhenProductExists() {
-            // TODO: Implement
+            when(orderRepository.findProductById(any())).thenReturn(Optional.of(sampleProduct));
+            assertEquals(10, inventoryService.checkStock("PROD-001"));
         }
 
         @Test
         @DisplayName("Should throw ResourceNotFoundException when the product does not exist")
         void shouldThrowResourceNotFoundWhenProductDoesNotExist() {
             // TODO: Implement
+            when(orderRepository.findProductById(any())).thenReturn(Optional.empty());
+            var error = assertThrows(ResourceNotFoundException.class, () -> inventoryService.checkStock("PROD-001"));
+            assertEquals("productId", error.getResourceId());
         }
     }
 }

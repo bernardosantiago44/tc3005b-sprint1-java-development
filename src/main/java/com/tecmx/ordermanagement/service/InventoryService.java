@@ -62,6 +62,8 @@ public class InventoryService {
 
         int newTotal = product.getStockQuantity() + additionalStock;
         product.setStockQuantity(newTotal);
+        
+        orderRepository.saveProduct(product);
 
         logger.info("Stock updated for {}: +{} → new stock: {}", productId, additionalStock, newTotal);
 
@@ -77,7 +79,7 @@ public class InventoryService {
                 .findProductById(productId)
                 .orElseThrow(() -> new ResourceNotFoundException("Product " + productId + " not found", "productId"));
 
-        logger.debug("Stock checked for {}: {}", product, product.getStockQuantity());
+        logger.debug("Stock checked for {}: {}", productId, product.getStockQuantity());
 
         return product.getStockQuantity();
     }
