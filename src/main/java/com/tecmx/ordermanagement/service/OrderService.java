@@ -62,7 +62,7 @@ public class OrderService {
         validateOptionalValue(order, "order");
         validateOptionalValue(product, "product");
         validateQuantity(quantity);
-        validateStock(product.get().getStockQuantity(), quantity);
+        validateStock(product.get(), quantity);
 
         int remainingQuantity = product.get().getStockQuantity() - quantity;
         product.get().setStockQuantity(remainingQuantity);
@@ -163,7 +163,7 @@ public class OrderService {
      * @throws BusinessRuleException if the provided orderId exists in the repository.
      */
     private void validateOrderIdAvailable(String orderId) throws BusinessRuleException {
-        if (this.orderRepository.findOrderById(orderId).isPresent()) {
+        if (this.orderRepository.existsOrderById(orderId)) {
             logger.error("Found duplicate orderId: {}", orderId);
             throw new BusinessRuleException("Found duplicate orderId " + orderId);
         }
@@ -175,7 +175,7 @@ public class OrderService {
      * @throws ResourceNotFoundException if orderId does not exist in the repository.
      */
     private void ensureOrderIdExists(String orderId) throws ResourceNotFoundException {
-        if (!orderRepository.existsOrderById(orderId)) {
+        if (orderRepository.findOrderById(orderId).isEmpty()) {
             logger.error("Order {} not found.", orderId);
             throw new ResourceNotFoundException("Order with id " + orderId + " does not exist.", "orderId");
         }
@@ -209,13 +209,13 @@ public class OrderService {
     /** Validates the stock of the product is enough
      * to cover the order.
      *
-     * @param inventoryStock actual stock of the product.
+     * @param product product to validate.
      * @param neededStock requested quantity of the product in order.
      * @throws BusinessRuleException if the stock is less than the required stock.
      */
-    private static void validateStock(int inventoryStock, int neededStock) throws BusinessRuleException {
-        if (inventoryStock < neededStock) {
-            logger.error("Insufficient stock: {} out of the {} needed", inventoryStock, neededStock);
+    private static void validateStock(Product product, int neededStock) throws BusinessRuleException {
+        if (product.getStockQuantity() < neededStock) {
+            logger.error("Insufficient stock for {}: {} out of the {} needed", product.getId(), product.getStockQuantity(), neededStock);
             throw new BusinessRuleException("Insufficient stock");
         }
     }
