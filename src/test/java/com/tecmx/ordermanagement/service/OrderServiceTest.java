@@ -295,6 +295,19 @@ class OrderServiceTest {
             ResourceNotFoundException error = assertThrows(ResourceNotFoundException.class, () -> orderService.cancelOrder("ORD-001"));
             assertEquals("orderId", error.getResourceId());
         }
+        
+        @Test
+        @DisplayName("Should restock product when cancelled")
+        void shouldRestockProductOnCancel() {
+            OrderItem item = new OrderItem(sampleProduct, 5);
+            sampleOrder.addItem(item);
+            when(orderRepository.findOrderById(any())).thenReturn(Optional.of(sampleOrder));
+            
+            Order order = orderService.cancelOrder("OR-001");
+            
+            assertEquals(15, order.getItems().get(0).getProduct().getStockQuantity());
+            verify(orderRepository, times(1)).saveProduct(any());
+        }
     }
 
     // =========================================================================
