@@ -4,6 +4,7 @@ import com.tecmx.ordermanagement.exception.BusinessRuleException;
 import com.tecmx.ordermanagement.exception.ValidationException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -88,5 +89,55 @@ class ModelTests {
         assertEquals(100, product.getPrice());
         assertEquals(5, product.getStockQuantity());
         assertEquals(Product.class, product.getClass());
+    }
+    
+    @Test
+    @DisplayName("Product price setter") 
+    void productPriceSetter() {
+        Product product = new Product("prod-01", "test product", 100, 5);
+        product.setPrice(200);
+        assertEquals(200, product.getPrice());
+    }
+    
+    @Test
+    @DisplayName("Product name setter") 
+    void productNameSetter() {
+        Product product = new Product("prod-01", "no name", 100, 5);
+        product.setName("test product");
+        assertEquals("test product", product.getName());
+    }
+    
+    @Test
+    @DisplayName("Product id setter") 
+    void productIdSetter() {
+        Product product = new Product("prod-01", "no name", 100, 5);
+        product.setId("001");
+        assertEquals("001", product.getId());
+    }
+    
+    @Test
+    @DisplayName("Order customer id setter")
+    void orderCustomerIdSetter() {
+        Order order = new Order("or1", "01");
+        order.setCustomerId("001");
+        assertEquals("001", order.getCustomerId());
+    }
+    
+    @Test
+    @DisplayName("Order id setter")
+    void orderIdSetter() {
+        Order order = new Order("or1", "01");
+        order.setId("001");
+        assertEquals("001", order.getId());
+    }
+    
+    @Test
+    @DisplayName("Order createdAt setter")
+    void orderCreatedAtSetter() {
+        LocalDateTime now = LocalDateTime.now();
+        Order order = new Order("or1", "01");
+        order.setCreatedAt(now);
+        
+        assertEquals(now, order.getCreatedAt());
     }
 }

@@ -52,12 +52,8 @@ class InventoryServiceTest {
         @Test
         @DisplayName("Should register a product successfully")
         void shouldRegisterProductSuccessfully() {
-            // TODO: Arrange - Mock saveProduct to return the received argument.
             when(orderRepository.saveProduct(any(Product.class))).thenAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-            // TODO: Act - registerProduct("PROD-002", "Mouse", 29.99, 100).
             Product product = inventoryService.registerProduct("PROD-002", "Mouse", 29.99, 100);
-            // TODO: Assert - The returned product has the correct data.
-            //       Verify that saveProduct was invoked 1 time.
             assertEquals("PROD-002", product.getId());
             assertEquals("Mouse", product.getName());
             assertEquals(29.99, product.getPrice());
@@ -142,7 +138,6 @@ class InventoryServiceTest {
         @Test
         @DisplayName("Should throw ValidationException if additionalStock <= 0")
         void shouldThrowValidationExceptionWhenAdditionalStockIsInvalid() {
-            // TODO: Implement
             when(orderRepository.findProductById(any())).thenReturn(Optional.of(sampleProduct));
             
             var zero = assertThrows(ValidationException.class, () ->  inventoryService.restockProduct("PROD-001", 0));
@@ -172,7 +167,6 @@ class InventoryServiceTest {
         @Test
         @DisplayName("Should throw ResourceNotFoundException when the product does not exist")
         void shouldThrowResourceNotFoundWhenProductDoesNotExist() {
-            // TODO: Implement
             when(orderRepository.findProductById(any())).thenReturn(Optional.empty());
             var error = assertThrows(ResourceNotFoundException.class, () -> inventoryService.checkStock("PROD-001"));
             assertEquals("productId", error.getResourceId());
